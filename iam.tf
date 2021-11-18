@@ -1,20 +1,29 @@
 resource "aws_iam_user" "iam" {
 	count = length(var.iam_users)
-	name = element(var.iam_users, count.index)
+	name  = element(var.iam_users, count.index)
 
 	force_destroy = true
 }
 
 resource "aws_iam_access_key" "iam" {
 	count = length(aws_iam_user.iam)
-	user = aws_iam_user.iam[count.index].name
+	user  = aws_iam_user.iam[count.index].name
 }
 
-resource "aws_iam_account_password_policy" "strict" {
-  minimum_password_length        = 8
-  require_lowercase_characters   = true
-  require_numbers                = true
-  require_uppercase_characters   = true
-  require_symbols                = true
-  allow_users_to_change_password = true
+resource "aws_ssm_parameter" "iam" {
+  count = length(aws_iam_user.iam)
+
+  name = "${var.ssm_parameter_prefix}/${aws_iam_user.iam[count.index].name}"
+  type = "SecureString"
+  value = templatefile("${path.module}/templates/iam-users.tpl", {
+    iam_user              = aws_iam_user.iam[count.index].name,
+    aws_access_key_id     = aws_iam_access_key.iam[count.index].id
+    aws_secret_access_key = aws_iam_access_key.iam[count.index].secret
+    enable_console_login  = var.enable_console_login
+    login_password        = !var.enable_console_login ? "" : aws_iam_user_login_profile.iam[count.index].encrypted_password
+  })
+}
+
+output "ssm_parameter" {
+	value = aws_ssm_parameter.iam.*.name
 }

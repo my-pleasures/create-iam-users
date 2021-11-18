@@ -3,8 +3,8 @@ resource "aws_iam_group" "iam" {
 }
 
 resource "aws_iam_user_group_membership" "iam" {
-	count = length(aws_iam_user.iam)
-	user = aws_iam_user.iam[count.index].name
+	count  = length(aws_iam_user.iam)
+	user   = aws_iam_user.iam[count.index].name
 	groups = [
 		aws_iam_group.iam.name
 	]
@@ -12,7 +12,7 @@ resource "aws_iam_user_group_membership" "iam" {
 
 # Attaches a Managed IAM Policy to an IAM group
 resource "aws_iam_group_policy_attachment" "iam" {
-	group = aws_iam_group.iam.name
+	group      = aws_iam_group.iam.name
 	policy_arn = data.aws_iam_policy.iam.arn
 }
 
